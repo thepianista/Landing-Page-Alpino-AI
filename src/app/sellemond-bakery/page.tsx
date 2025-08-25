@@ -25,8 +25,6 @@ import {
   getUniqueProductCount,
 } from '@/lib/data-processing';
 import { Skeleton } from '@/components/sellemond-bakery/ui/skeleton';
-import { createChat } from '@n8n/chat';
-import '@n8n/chat/style.css';
 
 const menuItems = [
   {
@@ -126,12 +124,6 @@ export default function Dashboard() {
   const productTypes = getUniqueProductCount(data);
   const bestDay = getBestWeekday(data);
   const { percentChange } = getMonthlyComparison(data);
-
-  useEffect(() => {
-		createChat({
-			webhookUrl: 'https://ai.alpino-ai.com/webhook/23168e7d-7ccb-4426-a16b-0ed5d1281b41/chat'
-		});
-	}, []);
 
   return (
     <div className="flex flex-row min-h-screen bg-background">
