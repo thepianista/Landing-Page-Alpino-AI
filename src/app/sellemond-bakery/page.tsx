@@ -18,7 +18,7 @@ import { Badge } from '@/components/sellemond-bakery/ui/badge';
 import { Button } from '@/components/sellemond-bakery/ui/button';
 import { Product } from '@/types';
 import {
-  getBestWeekday,
+  getSalesByWeekday,
   getMonthlyComparison,
   getTopProduct,
   getTotalUnitsSold,
@@ -119,10 +119,37 @@ export default function Dashboard() {
     });
   }, [data]);
 
-  const topProduct = getTopProduct(data);
-  const totalUnits = getTotalUnitsSold(data).toFixed(0);
-  const productTypes = getUniqueProductCount(data);
-  const bestDay = getBestWeekday(data);
+  // Filtrar datos del último año y del anterior
+  const years = Array.from(new Set(data.map((item) => new Date(item.order_date).getFullYear()))).sort((a, b) => b - a);
+  const lastYear = years[0];
+  const prevYear = years[1];
+  const dataLastYear = data.filter((item) => new Date(item.order_date).getFullYear() === lastYear);
+  const dataPrevYear = prevYear ? data.filter((item) => new Date(item.order_date).getFullYear() === prevYear) : [];
+
+  // Best day (most orders) for last year
+  const bestDayData = getSalesByWeekday(dataLastYear);
+  const bestDay = bestDayData.reduce((max, curr) => (curr.total > max.total ? curr : max), bestDayData[0]);
+
+  // Best day for previous year (if exists)
+  let prevBestDay = null;
+  if (dataPrevYear.length) {
+    const prevBestDayData = getSalesByWeekday(dataPrevYear);
+  prevBestDay = prevBestDayData.reduce((max, curr) => (curr.total > max.total ? curr : max), prevBestDayData[0]);
+  }
+
+  // Top product y comparación año anterior
+  const topProduct = getTopProduct(dataLastYear);
+  const prevTopProduct = dataPrevYear.length ? getTopProduct(dataPrevYear) : null;
+
+  // Total units sold y comparación año anterior
+  const totalUnits = getTotalUnitsSold(dataLastYear);
+  const prevTotalUnits = dataPrevYear.length ? getTotalUnitsSold(dataPrevYear) : null;
+
+  // Product types y comparación año anterior
+  const productTypes = getUniqueProductCount(dataLastYear);
+  const prevProductTypes = dataPrevYear.length ? getUniqueProductCount(dataPrevYear) : null;
+
+  // Monthly comparison (ya compara este mes con el anterior, pero lo dejamos igual)
   const { percentChange } = getMonthlyComparison(data);
 
   return (
@@ -164,8 +191,12 @@ export default function Dashboard() {
                   </>
                 ) : (
                   <>
-                    <div className="text-2xl font-bold">{totalUnits.toLocaleString()} units</div>
-                    <p className="text-xs text-muted-foreground">+{percentChange}% from last month</p>
+                    <div className="text-2xl font-bold">{Number(totalUnits).toFixed(0)} units</div>
+                    <p className="text-xs text-muted-foreground">
+                      {prevTotalUnits !== null && (
+                        <span>Previous year: {Number(prevTotalUnits).toFixed(0)} units</span>
+                      )}
+                    </p>
                   </>
                 )}
               </CardContent>
@@ -184,9 +215,11 @@ export default function Dashboard() {
                   </>
                 ) : (
                   <>
-                    <div className="text-2xl font-bold">{productTypes}</div>
+                    <div className="text-2xl font-bold">{Number(productTypes).toFixed(0)}</div>
                     <p className="text-xs text-muted-foreground">
-                      +{(productTypes * 0.08).toFixed(1)}% from last month
+                      {prevProductTypes !== null && (
+                        <span>Previous year: {Number(prevProductTypes).toFixed(0)}</span>
+                      )}
                     </p>
                   </>
                 )}
@@ -207,7 +240,12 @@ export default function Dashboard() {
                 ) : (
                   <>
                     <div className="text-2xl font-bold">{bestDay.day}</div>
-                    <p className="text-xs text-muted-foreground">Average: €{bestDay.average}/day</p>
+                    <p className="text-xs text-muted-foreground">
+                      Orders: {bestDay.total} (last year)
+                      {prevBestDay && (
+                        <span className="block mt-1">Previous year: {prevBestDay.day} ({prevBestDay.total.toFixed(0)} orders)</span>
+                      )}
+                    </p>
                   </>
                 )}
               </CardContent>
@@ -226,7 +264,12 @@ export default function Dashboard() {
                 ) : (
                   <>
                     <div className="text-2xl font-bold">{topProduct?.name || ""}</div>
-                    <p className="text-xs text-muted-foreground">{topProduct?.amount || ""} units sold</p>
+                    <p className="text-xs text-muted-foreground">
+                      {topProduct?.amount ? Number(topProduct.amount).toFixed(0) : ""} units sold
+                      {prevTopProduct && (
+                        <span className="block mt-1">Previous year: {prevTopProduct.name} ({Number(prevTopProduct.amount).toFixed(0)} units)</span>
+                      )}
+                    </p>
                   </>
                 )}
               </CardContent>
