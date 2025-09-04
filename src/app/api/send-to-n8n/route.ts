@@ -11,8 +11,8 @@ export async function POST(request: NextRequest) {
     // Here you would make the actual call to your N8n webhook
     // Replace 'YOUR_N8N_WEBHOOK_URL' with your actual N8n webhook URL
     // const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL || 'YOUR_N8N_WEBHOOK_URL';
-    // const n8nWebhookUrl = 'https://ai.alpino-ai.com/webhook/ideas';
-    const n8nWebhookUrl = 'https://ai.alpino-ai.com/webhook-test/ideas';
+    const n8nWebhookUrl = 'https://ai.alpino-ai.com/webhook/ideas';
+    // const n8nWebhookUrl = 'https://ai.alpino-ai.com/webhook-test/ideas';
 
     const response = await fetch(n8nWebhookUrl, {
       method: 'POST',
