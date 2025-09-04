@@ -34,7 +34,7 @@ const Hero: FC = () => {
 
           <Link
             className="bg-green-900 text-white px-6 py-3 rounded-lg shadow hover:bg-green-800 transition"
-            href={'/sellemond-bakery'}
+            href={'/home'}
           >
             Jetzt kennenlernen
           </Link>

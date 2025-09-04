@@ -11,9 +11,6 @@ import { WeeklyTrends } from '@/components/sellemond-bakery/weekly-trends';
 import { SeasonalAnalysis } from '@/components/sellemond-bakery/seasonal-analysis';
 import { ForecastingModels } from '@/components/sellemond-bakery/forecasting-models';
 import { TopProducts } from '@/components/sellemond-bakery/top-products';
-import Logo from '@/public/Logo.png';
-import Image from 'next/image';
-import Link from 'next/link';
 import { Badge } from '@/components/sellemond-bakery/ui/badge';
 import { Button } from '@/components/sellemond-bakery/ui/button';
 import { Product } from '@/types';
@@ -25,56 +22,6 @@ import {
   getUniqueProductCount,
 } from '@/lib/data-processing';
 import { Skeleton } from '@/components/sellemond-bakery/ui/skeleton';
-
-const menuItems = [
-  {
-    title: 'Dashboard',
-    icon: Home,
-    id: 'dashboard',
-  },
-  {
-    title: 'Análisis de Ventas',
-    icon: BarChart3,
-    id: 'sales',
-  },
-  {
-    title: 'Tendencias',
-    icon: TrendingUp,
-    id: 'trends',
-  },
-  {
-    title: 'Forecasting',
-    icon: PieChart,
-    id: 'forecasting',
-  },
-];
-
-function AppSidebar() {
-  return (
-    <aside className="w-64 sticky top-0 max-h-screen overflow-y-auto bg-muted border-r flex flex-col">
-      <div className="border-b py-2 flex justify-center">
-        <Image src={Logo} alt="logo image" width={178} />
-      </div>
-      <nav className="flex-1 px-4 py-6 space-y-2">
-        {/* {menuItems.map((item) => (
-          <button
-            key={item.id}
-            className="flex items-center gap-3 w-full px-4 py-2 rounded-md text-left hover:bg-accent hover:text-accent-foreground transition"
-          >
-            <item.icon className="h-5 w-5" />
-            <span className="text-sm font-medium">{item.title}</span>
-          </button>
-        ))} */}
-      </nav>
-      <div className="border-t p-4 hover:bg-black/10 transition">
-        <Link href="/" className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium">
-          <LogOut className="h-4 w-4" />
-          <span>Salir</span>
-        </Link>
-      </div>
-    </aside>
-  );
-}
 
 export default function Dashboard() {
   const [selectedProduct, setSelectedProduct] = useState<string>('');
@@ -134,7 +81,7 @@ export default function Dashboard() {
   let prevBestDay = null;
   if (dataPrevYear.length) {
     const prevBestDayData = getSalesByWeekday(dataPrevYear);
-  prevBestDay = prevBestDayData.reduce((max, curr) => (curr.total > max.total ? curr : max), prevBestDayData[0]);
+    prevBestDay = prevBestDayData.reduce((max, curr) => (curr.total > max.total ? curr : max), prevBestDayData[0]);
   }
 
   // Top product y comparación año anterior
@@ -154,7 +101,6 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-row min-h-screen bg-background">
-      <AppSidebar />
       <div className="flex-1 flex flex-col min-h-screen">
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex h-20 items-center justify-between px-8">
@@ -193,9 +139,7 @@ export default function Dashboard() {
                   <>
                     <div className="text-2xl font-bold">{Number(totalUnits).toFixed(0)} units</div>
                     <p className="text-xs text-muted-foreground">
-                      {prevTotalUnits !== null && (
-                        <span>Previous year: {Number(prevTotalUnits).toFixed(0)} units</span>
-                      )}
+                      {prevTotalUnits !== null && <span>Previous year: {Number(prevTotalUnits).toFixed(0)} units</span>}
                     </p>
                   </>
                 )}
@@ -217,9 +161,7 @@ export default function Dashboard() {
                   <>
                     <div className="text-2xl font-bold">{Number(productTypes).toFixed(0)}</div>
                     <p className="text-xs text-muted-foreground">
-                      {prevProductTypes !== null && (
-                        <span>Previous year: {Number(prevProductTypes).toFixed(0)}</span>
-                      )}
+                      {prevProductTypes !== null && <span>Previous year: {Number(prevProductTypes).toFixed(0)}</span>}
                     </p>
                   </>
                 )}
@@ -243,7 +185,9 @@ export default function Dashboard() {
                     <p className="text-xs text-muted-foreground">
                       Orders: {bestDay.total} (last year)
                       {prevBestDay && (
-                        <span className="block mt-1">Previous year: {prevBestDay.day} ({prevBestDay.total.toFixed(0)} orders)</span>
+                        <span className="block mt-1">
+                          Previous year: {prevBestDay.day} ({prevBestDay.total.toFixed(0)} orders)
+                        </span>
                       )}
                     </p>
                   </>
@@ -263,11 +207,13 @@ export default function Dashboard() {
                   </>
                 ) : (
                   <>
-                    <div className="text-2xl font-bold">{topProduct?.name || ""}</div>
+                    <div className="text-2xl font-bold">{topProduct?.name || ''}</div>
                     <p className="text-xs text-muted-foreground">
-                      {topProduct?.amount ? Number(topProduct.amount).toFixed(0) : ""} units sold
+                      {topProduct?.amount ? Number(topProduct.amount).toFixed(0) : ''} units sold
                       {prevTopProduct && (
-                        <span className="block mt-1">Previous year: {prevTopProduct.name} ({Number(prevTopProduct.amount).toFixed(0)} units)</span>
+                        <span className="block mt-1">
+                          Previous year: {prevTopProduct.name} ({Number(prevTopProduct.amount).toFixed(0)} units)
+                        </span>
                       )}
                     </p>
                   </>
