@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Calendar, Home, TrendingUp, BarChart3, PieChart, HomeIcon, LogOut, RefreshCw } from 'lucide-react';
+import { Calendar, TrendingUp, BarChart3, PieChart, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/sellemond-bakery/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/sellemond-bakery/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/sellemond-bakery/ui/select';
@@ -31,26 +31,31 @@ export default function Dashboard() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const fetchData = async () => {
+    const controller = new AbortController();
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('https://ai.alpino-ai.com/webhook/sellemond-bakery');
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const res = await fetch('https://ai.alpino-ai.com/webhook/sellemond-bakery', {
+        signal: controller.signal,
+        // Puedes añadir cache o headers aquí si lo necesitas
+      });
 
-      const result = await response.json();
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      const processedData = Array.isArray(result) ? result : [result];
-      setData(processedData);
+      const json = await res.json();
+      // Normaliza a array de Product
+      const list: Product[] = Array.isArray(json) ? json : [json];
+      setData(list);
       setLastUpdated(new Date());
-      console.log(result);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar los datos');
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') {
+        setError(err?.message || 'Error al cargar los datos');
+      }
     } finally {
       setLoading(false);
     }
+    return () => controller.abort();
   };
 
   useEffect(() => {
@@ -66,38 +71,41 @@ export default function Dashboard() {
     });
   }, [data]);
 
-  // Filtrar datos del último año y del anterior
+  // Años presentes en los datos
   const years = Array.from(new Set(data.map((item) => new Date(item.order_date).getFullYear()))).sort((a, b) => b - a);
   const lastYear = years[0];
   const prevYear = years[1];
-  const dataLastYear = data.filter((item) => new Date(item.order_date).getFullYear() === lastYear);
-  const dataPrevYear = prevYear ? data.filter((item) => new Date(item.order_date).getFullYear() === prevYear) : [];
 
-  // Best day (most orders) for last year
+  const dataLastYear = lastYear ? data.filter((i) => new Date(i.order_date).getFullYear() === lastYear) : [];
+  const dataPrevYear = prevYear ? data.filter((i) => new Date(i.order_date).getFullYear() === prevYear) : [];
+
+  // Best day por año
   const bestDayData = getSalesByWeekday(dataLastYear);
-  const bestDay = bestDayData.reduce((max, curr) => (curr.total > max.total ? curr : max), bestDayData[0]);
+  const bestDay = bestDayData.length
+    ? bestDayData.reduce((max, curr) => (curr.total > max.total ? curr : max), bestDayData[0])
+    : { day: '-', total: 0 };
 
-  // Best day for previous year (if exists)
-  let prevBestDay = null;
+  let prevBestDay: { day: string; total: number } | null = null;
   if (dataPrevYear.length) {
     const prevBestDayData = getSalesByWeekday(dataPrevYear);
-    prevBestDay = prevBestDayData.reduce((max, curr) => (curr.total > max.total ? curr : max), prevBestDayData[0]);
+    prevBestDay = prevBestDayData.length
+      ? prevBestDayData.reduce((max, curr) => (curr.total > max.total ? curr : max), prevBestDayData[0])
+      : null;
   }
 
-  // Top product y comparación año anterior
+  // Métricas varias
   const topProduct = getTopProduct(dataLastYear);
   const prevTopProduct = dataPrevYear.length ? getTopProduct(dataPrevYear) : null;
 
-  // Total units sold y comparación año anterior
-  const totalUnits = getTotalUnitsSold(dataLastYear);
-  const prevTotalUnits = dataPrevYear.length ? getTotalUnitsSold(dataPrevYear) : null;
+  const totalUnits = Number(getTotalUnitsSold(dataLastYear) || 0);
+  const prevTotalUnits = dataPrevYear.length ? Number(getTotalUnitsSold(dataPrevYear) || 0) : null;
 
-  // Product types y comparación año anterior
-  const productTypes = getUniqueProductCount(dataLastYear);
-  const prevProductTypes = dataPrevYear.length ? getUniqueProductCount(dataPrevYear) : null;
+  const productTypes = Number(getUniqueProductCount(dataLastYear) || 0);
+  const prevProductTypes = dataPrevYear.length ? Number(getUniqueProductCount(dataPrevYear) || 0) : null;
 
-  // Monthly comparison (ya compara este mes con el anterior, pero lo dejamos igual)
-  const { percentChange } = getMonthlyComparison(data);
+  const { percentChange } = getMonthlyComparison(data); // lo usas si quieres mostrar % extra
+
+  const disabledRefresh = loading;
 
   return (
     <div className="flex flex-row min-h-screen bg-background">
@@ -114,15 +122,23 @@ export default function Dashboard() {
                   Updated: {lastUpdated.toLocaleTimeString()}
                 </Badge>
               )}
-              <Button onClick={fetchData} variant="outline" size="sm">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Update
+              <Button onClick={fetchData} variant="outline" size="sm" disabled={disabledRefresh} aria-label="Refresh">
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Updating' : 'Update'}
               </Button>
             </div>
           </div>
         </header>
 
         <main className="flex-1 p-6 space-y-6">
+          {/* Banner de error si algo falló */}
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 text-red-800 px-4 py-3">
+              <strong className="mr-1">Error:</strong>
+              {error}
+            </div>
+          )}
+
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -137,9 +153,9 @@ export default function Dashboard() {
                   </>
                 ) : (
                   <>
-                    <div className="text-2xl font-bold">{Number(totalUnits).toFixed(0)} units</div>
+                    <div className="text-2xl font-bold">{totalUnits.toFixed(0)} units</div>
                     <p className="text-xs text-muted-foreground">
-                      {prevTotalUnits !== null && <span>Previous year: {Number(prevTotalUnits).toFixed(0)} units</span>}
+                      {prevTotalUnits !== null && <span>Previous year: {prevTotalUnits.toFixed(0)} units</span>}
                     </p>
                   </>
                 )}
@@ -159,9 +175,9 @@ export default function Dashboard() {
                   </>
                 ) : (
                   <>
-                    <div className="text-2xl font-bold">{Number(productTypes).toFixed(0)}</div>
+                    <div className="text-2xl font-bold">{productTypes.toFixed(0)}</div>
                     <p className="text-xs text-muted-foreground">
-                      {prevProductTypes !== null && <span>Previous year: {Number(prevProductTypes).toFixed(0)}</span>}
+                      {prevProductTypes !== null && <span>Previous year: {prevProductTypes.toFixed(0)}</span>}
                     </p>
                   </>
                 )}
@@ -183,10 +199,10 @@ export default function Dashboard() {
                   <>
                     <div className="text-2xl font-bold">{bestDay.day}</div>
                     <p className="text-xs text-muted-foreground">
-                      Orders: {bestDay.total} (last year)
+                      Orders: {Number(bestDay.total || 0).toFixed(0)} (last year)
                       {prevBestDay && (
                         <span className="block mt-1">
-                          Previous year: {prevBestDay.day} ({prevBestDay.total.toFixed(0)} orders)
+                          Previous year: {prevBestDay.day} ({Number(prevBestDay.total || 0).toFixed(0)} orders)
                         </span>
                       )}
                     </p>
@@ -194,6 +210,7 @@ export default function Dashboard() {
                 )}
               </CardContent>
             </Card>
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Top Product</CardTitle>
@@ -207,12 +224,12 @@ export default function Dashboard() {
                   </>
                 ) : (
                   <>
-                    <div className="text-2xl font-bold">{topProduct?.name || ''}</div>
+                    <div className="text-2xl font-bold">{topProduct?.name || '-'}</div>
                     <p className="text-xs text-muted-foreground">
-                      {topProduct?.amount ? Number(topProduct.amount).toFixed(0) : ''} units sold
+                      {topProduct?.amount ? Number(topProduct.amount).toFixed(0) : '0'} units sold
                       {prevTopProduct && (
                         <span className="block mt-1">
-                          Previous year: {prevTopProduct.name} ({Number(prevTopProduct.amount).toFixed(0)} units)
+                          Previous year: {prevTopProduct.name} ({Number(prevTopProduct.amount || 0).toFixed(0)} units)
                         </span>
                       )}
                     </p>
@@ -276,7 +293,7 @@ export default function Dashboard() {
             <TabsContent value="products" className="space-y-4">
               <div className="flex items-center gap-4">
                 <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                  <SelectTrigger className="w-[200px]">
+                  <SelectTrigger className="w-[200px]" aria-label="Select product">
                     <SelectValue placeholder="Select product" />
                   </SelectTrigger>
                   <SelectContent>

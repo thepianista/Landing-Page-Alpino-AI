@@ -9,14 +9,13 @@ import '@n8n/chat/style.css';
 import { createChat } from '@n8n/chat';
 
 type UploadStatus = 'queued' | 'uploading' | 'done' | 'error' | 'canceled';
-
 type UploadItem = {
   id: string;
   file: File;
-  progress: number;      // 0-100
+  progress: number;
   status: UploadStatus;
   error?: string;
-  xhr?: XMLHttpRequest;  // para cancelar
+  xhr?: XMLHttpRequest;
 };
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -57,19 +56,20 @@ export default function RAGChatbot() {
 
   // ===== n8n Chat =====
   useEffect(() => {
+    // (dev/HMR) borra instancias previas del widget si quedaron colgadas
+    document.querySelectorAll('[data-n8n-chat-root]').forEach((el) => el.remove());
+
     if (chatRef.current) return;
     chatRef.current = createChat({
       webhookUrl: 'https://ai.alpino-ai.com/webhook/b5721431-951b-4e54-b39d-72eaadff2007/chat',
-      target: '#n8n-chat',
+      target: '#rag-chat-container', // <-- id único
       mode: 'fullscreen',
       loadPreviousSession: true,
       chatInputKey: 'chatInput',
       chatSessionKey: 'sessionId',
       metadata: { source: 'rag-agent-front', sessionId },
       showWelcomeScreen: false,
-      initialMessages: [
-        "Hi! I'm your AI assistant. Ask me anything about the documents you've uploaded.",
-      ],
+      initialMessages: ["Hi! I'm your AI assistant. Ask me anything about the documents you've uploaded."],
       i18n: {
         en: {
           title: '',
@@ -90,7 +90,10 @@ export default function RAGChatbot() {
 
   // ===== Previene drag/drop global que rompe el dropzone =====
   useEffect(() => {
-    const prevent = (e: DragEvent) => { e.preventDefault(); e.stopPropagation(); };
+    const prevent = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
     window.addEventListener('dragover', prevent);
     window.addEventListener('drop', prevent);
     return () => {
@@ -124,7 +127,6 @@ export default function RAGChatbot() {
     if (tooBig.length) {
       showToast('error', 'Some files are too large', `These files exceed 10MB and were skipped: ${tooBig.join(', ')}`);
     }
-
     if (newItems.length) setUploads((prev) => [...prev, ...newItems]);
   };
 
@@ -156,16 +158,23 @@ export default function RAGChatbot() {
   };
 
   const onDragEnter: React.DragEventHandler<HTMLDivElement> = (e) => {
-    e.preventDefault(); e.stopPropagation(); setIsDragging(true);
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
   };
   const onDragOver: React.DragEventHandler<HTMLDivElement> = (e) => {
-    e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'copy'; setIsDragging(true);
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+    setIsDragging(true);
   };
   const onDragLeave: React.DragEventHandler<HTMLDivElement> = (e) => {
     if (e.currentTarget === e.target) setIsDragging(false);
   };
   const onDrop: React.DragEventHandler<HTMLDivElement> = (e) => {
-    e.preventDefault(); e.stopPropagation(); setIsDragging(false);
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
     const files = getFilesFromDataTransfer(e.dataTransfer);
     if (files.length) addFilesFromArray(files);
   };
@@ -177,7 +186,7 @@ export default function RAGChatbot() {
       fd.append('file', item.file);
 
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/rag-agent', true); // <--- tu route actual
+      xhr.open('POST', '/api/rag-agent', true);
 
       xhr.upload.onprogress = (evt) => {
         if (!evt.lengthComputable) return;
@@ -190,7 +199,11 @@ export default function RAGChatbot() {
 
         const ok = xhr.status >= 200 && xhr.status < 300;
         let payload: any = null;
-        try { payload = JSON.parse(xhr.responseText || '{}'); } catch { payload = { text: xhr.responseText }; }
+        try {
+          payload = JSON.parse(xhr.responseText || '{}');
+        } catch {
+          payload = { text: xhr.responseText };
+        }
 
         setUploads((prev) =>
           prev.map((u) =>
@@ -208,7 +221,11 @@ export default function RAGChatbot() {
         if (ok) {
           showToast('success', 'File uploaded', `"${item.file.name}" indexed for RAG.`);
         } else if (item.status !== 'canceled') {
-          showToast('error', 'Upload failed', `"${item.file.name}" could not be uploaded. ${payload?.error ? `(${payload.error})` : ''}`);
+          showToast(
+            'error',
+            'Upload failed',
+            `"${item.file.name}" could not be uploaded. ${payload?.error ? `(${payload.error})` : ''}`
+          );
         }
         resolve();
       };
@@ -234,7 +251,9 @@ export default function RAGChatbot() {
     setUploads((prev) =>
       prev.map((u) => {
         if (u.id !== id) return u;
-        try { u.xhr?.abort?.(); } catch {}
+        try {
+          u.xhr?.abort?.();
+        } catch {}
         showToast('error', 'Upload canceled', `"${u.file.name}" was canceled by the user.`);
         return { ...u, status: 'canceled', error: 'Canceled by user' };
       })
@@ -249,9 +268,17 @@ export default function RAGChatbot() {
       {(toastStatus === 'success' || toastStatus === 'error') && (
         <div
           className={`fixed top-6 right-6 z-50 min-w-[320px] max-w-md px-6 py-4 rounded-xl shadow-lg flex items-center gap-4 transition-all duration-300
-            ${toastStatus === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`}
+            ${
+              toastStatus === 'success'
+                ? 'bg-green-50 border border-green-200 text-green-800'
+                : 'bg-red-50 border border-red-200 text-red-800'
+            }`}
         >
-          {toastStatus === 'success' ? <CheckCircle className="h-6 w-6 flex-shrink-0" /> : <AlertCircle className="h-6 w-6 flex-shrink-0" />}
+          {toastStatus === 'success' ? (
+            <CheckCircle className="h-6 w-6 flex-shrink-0" />
+          ) : (
+            <AlertCircle className="h-6 w-6 flex-shrink-0" />
+          )}
           <div className="flex-1">
             <h3 className="text-sm font-semibold mb-0.5">{toastTitle}</h3>
             <p className="text-sm">{toastMessage}</p>
@@ -387,7 +414,8 @@ export default function RAGChatbot() {
               <CardTitle className="text-gray-900 text-center">AI CHAT</CardTitle>
             </CardHeader>
             <CardContent>
-              <div id="n8n-chat" className="h-[420px] w-full" />
+              {/* Contenedor único del widget */}
+              <div id="rag-chat-container" className="relative h-[480px] w-full overflow-hidden" />
             </CardContent>
           </Card>
         </div>

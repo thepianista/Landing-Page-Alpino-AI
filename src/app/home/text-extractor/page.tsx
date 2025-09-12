@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Mountain, FileText, Loader2 } from 'lucide-react';
+import { FileText, Loader2, Target } from 'lucide-react';
 import { Button } from '@/components/sellemond-bakery/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/sellemond-bakery/ui/card';
 import { Input } from '@/components/sellemond-bakery/ui/input';
@@ -27,7 +27,6 @@ export default function TextExtractor() {
       });
 
       const data = await res.json();
-
       if (!res.ok) {
         const detail = data?.detail ? `\n\n${data.detail}` : '';
         throw new Error(data?.error || 'Extraction failed' + detail);
@@ -48,20 +47,17 @@ export default function TextExtractor() {
   const resultIsError = result.startsWith('Failed');
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      {/* HEADER */}
+    <>
+      {/* HEADER: no wrapper extra; el layout ya provee el contenedor */}
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-20 items-center justify-between px-8">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-xl font-bold text-black">Extract Website Information</h1>
-              <p className="text-gray-700">AI-powered text extraction tool</p>
-            </div>
-          </div>
+          <h1 className="text-xl font-bold text-black">Extract Website Information</h1>
+          {/* ejemplo: acción opcional */}
+          {/* <Button variant="outline"><Target className="w-4 h-4 mr-2" /> Docs</Button> */}
         </div>
       </header>
 
-      {/* MAIN */}
+      {/* MAIN ocupa el resto del alto dentro del flex-col del layout */}
       <main className="flex-1 p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* INPUT SECTION */}
@@ -123,7 +119,6 @@ export default function TextExtractor() {
                     resultIsError ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50'
                   }`}
                 >
-                  {/* caja scrollable */}
                   <pre
                     className={`font-mono text-[13px] leading-relaxed whitespace-pre-wrap break-words p-4 pr-6 max-h-[468px] overflow-y-auto
                       ${resultIsError ? 'text-red-700' : 'text-gray-700'}`}
@@ -143,6 +138,6 @@ export default function TextExtractor() {
           </Card>
         </div>
       </main>
-    </div>
+    </>
   );
 }
