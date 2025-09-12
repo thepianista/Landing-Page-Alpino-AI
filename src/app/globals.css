@@ -121,3 +121,63 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ===== THEME para el widget n8n aplicado al host ===== */
+#n8n-chat {
+  /* Verde activo del botón send */
+  --chat--color-primary: #16a34a;
+  --chat--color-primary-shade-50: #15803d;
+  --chat--color-primary-shade-100: #166534;
+
+  /* Gris que usa el botón cuando está deshabilitado (subimos contraste) */
+  --chat--color-medium: #6b7280; /* antes era #9ca3af */
+
+  /* Resto del tema (opcional, mantiene tu look) */
+  --chat--color-secondary: #16a34a;
+  --chat--color-secondary-shade-50: #22c55e;
+  --chat--color-white: #ffffff;
+  --chat--color-light: #f9fafb;
+  --chat--color-light-shade-50: #f3f4f6;
+  --chat--color-light-shade-100: #e5e7eb;
+  --chat--color-dark: #111827;
+  --chat--color-disabled: #9ca3af;
+  --chat--color-typing: #4b5563;
+
+  --chat--spacing: 0.75rem;
+  --chat--border-radius: 1rem;
+  --chat--transition-duration: 0.2s;
+
+  --chat--window--width: 100%;
+  --chat--window--height: 480px;
+
+  /* Ocultar/compactar header de bienvenida */
+  --chat--header-height: 0px;
+  --chat--header--padding: 0;
+  --chat--header--background: transparent;
+  --chat--header--color: transparent;
+  --chat--header--border-top: none;
+  --chat--header--border-bottom: none;
+  --chat--heading--font-size: 0;
+  --chat--subtitle--font-size: 0;
+  --chat--subtitle--line-height: 0;
+
+  /* Input */
+  --chat--textarea--height: 48px;
+
+  /* Mensajes */
+  --chat--message--font-size: 0.95rem;
+  --chat--message--padding: 0.6rem 0.9rem;
+  --chat--message--border-radius: 1rem;
+  --chat--message-line-height: 1.5;
+
+  --chat--message--bot--background: #ffffff;
+  --chat--message--bot--color: #111827;
+  --chat--message--bot--border: 1px solid #e5e7eb;
+
+  --chat--message--user--background: #dcfce7;
+  --chat--message--user--color: #166534;
+  --chat--message--user--border: 1px solid #bbf7d0;
+}
+
+/* Asegura alto del contenedor en fullscreen para que no se corte el input/botón */
+#n8n-chat { height: 480px; }
