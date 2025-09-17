@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FileText, Loader2, Target } from 'lucide-react';
+import { FileText, Loader2 } from 'lucide-react';
 import { Button } from '@/components/sellemond-bakery/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/sellemond-bakery/ui/card';
 import { Input } from '@/components/sellemond-bakery/ui/input';
@@ -26,17 +26,18 @@ export default function TextExtractor() {
         body: JSON.stringify({ url: websiteUrl, query }),
       });
 
-      const data = await res.json();
+      const resParsed = await res.json();
       if (!res.ok) {
-        const detail = data?.detail ? `\n\n${data.detail}` : '';
-        throw new Error(data?.error || 'Extraction failed' + detail);
+        const detail = resParsed?.detail ? `\n\n${resParsed.detail}` : '';
+        throw new Error(resParsed?.error || 'Extraction failed' + detail);
       }
 
-      const payload = data?.data || {};
-      const textOut =
-        payload.text || payload.answer || payload.result || payload.content || JSON.stringify(payload, null, 2);
+      const payload = resParsed?.data[0];
+      const messages = payload?.message;
+      const answer = messages?.content;
+      const content = answer?.content;
 
-      setResult(`Extracted from ${websiteUrl}\n\n${textOut}`);
+      setResult(`Extracted from ${websiteUrl}\n\n${content}`);
     } catch (err: any) {
       setResult(`Failed to extract: ${err?.message || 'Unknown error'}`);
     } finally {
@@ -51,9 +52,10 @@ export default function TextExtractor() {
       {/* HEADER: no wrapper extra; el layout ya provee el contenedor */}
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-20 items-center justify-between px-8">
-          <h1 className="text-xl font-bold text-black">Extract Website Information</h1>
-          {/* ejemplo: acción opcional */}
-          {/* <Button variant="outline"><Target className="w-4 h-4 mr-2" /> Docs</Button> */}
+          <div>
+            <h1 className="text-xl font-bold text-black">Extract Website Information</h1>
+            <p className="text-gray-700">AI Scrapper Agent</p>
+          </div>
         </div>
       </header>
 

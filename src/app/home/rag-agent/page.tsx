@@ -368,7 +368,7 @@ export default function RAGChatbot() {
               </p>
 
               {/* Lista de uploads */}
-              <div className="space-y-3">
+              <div className="space-y-3 overflow-y-auto h-30">
                 {uploads.map((u) => (
                   <div key={u.id} className="w-full rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
                     <div className="flex items-center justify-between">

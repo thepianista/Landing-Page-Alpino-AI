@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { BarChart3, FileText, Home, LogOut, MessageSquare } from 'lucide-react';
+import { BarChart3, FileText, FileUser, Home, LogOut, MessageSquare, Shredder } from 'lucide-react';
 import Logo from '@/public/Logo.png';
 import { usePathname } from 'next/navigation';
 
@@ -23,12 +23,22 @@ export default function AppSidebar() {
       title: 'RAG Agent',
       icon: MessageSquare,
       href: '/home/rag-agent',
-    }
-    ,{
+    },
+    {
       title: 'Text Extractor',
       icon: FileText,
       href: '/home/text-extractor',
-    }
+    },
+    {
+      title: 'Esterometro XML',
+      icon: Shredder,
+      href: '/home/esterometro-xml',
+    },
+    {
+      title: 'Accounting XML',
+      icon: FileUser,
+      href: '/home/accounting-xml',
+    },
   ];
 
   return (
