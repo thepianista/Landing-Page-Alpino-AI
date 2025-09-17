@@ -432,7 +432,7 @@ export default function RAGChatbot() {
                 capabilities. Upload documents, ask questions, and get answers.
               </p>
               <div className="flex gap-3">
-                <Link href="https://t.me/Interhotel_bot" target="_blank" rel="noopener noreferrer">
+                <Link href="https://t.me/alpinoai_bot" target="_blank" rel="noopener noreferrer">
                   <Button variant="default" className="cursor-pointer">
                     <Mic className="w-5 h-5 mr-2" /> CONNECT TO OUR TELEGRAM VOICEBOT
                   </Button>
