@@ -19,6 +19,46 @@ export default function TextExtractor() {
     setIsLoading(true);
     setResult('');
 
+    // utilidades
+    const toPrettyString = (val: any) => {
+      if (val == null) return '';
+      if (typeof val === 'string') {
+        // si la string contiene JSON, intentamos embellecerlo
+        try {
+          const maybe = JSON.parse(val);
+          if (typeof maybe === 'object') return JSON.stringify(maybe, null, 2);
+        } catch {}
+        return val;
+      }
+      // objetos/arrays
+      try {
+        return JSON.stringify(val, null, 2);
+      } catch {
+        return String(val);
+      }
+    };
+
+    // Algunos proveedores devuelven message.content como string, objeto, o array de partes
+    const getMessageContent = (message: any) => {
+      if (!message) return '';
+      const c = message.content;
+
+      // 1) Si es array de partes (p.ej. {type:'output_text', text:'...'} o {type:'json_object', json:{...}})
+      if (Array.isArray(c)) {
+        const jsonPart = c.find((p) => p?.type === 'output_json' || p?.type === 'json_object');
+        if (jsonPart?.json) return jsonPart.json;
+
+        const textPart = c.find((p) => p?.type === 'output_text' || p?.type === 'text');
+        if (textPart?.text) return textPart.text;
+
+        // fallback: concatenar lo que haya
+        return c.map((p) => p?.text ?? p).join('\n\n');
+      }
+
+      // 2) Si es string u objeto, devolver tal cual
+      return c;
+    };
+
     try {
       const res = await fetch('/api/extract-data', {
         method: 'POST',
@@ -32,12 +72,19 @@ export default function TextExtractor() {
         throw new Error(resParsed?.error || 'Extraction failed' + detail);
       }
 
-      const payload = resParsed?.data[0];
-      const messages = payload?.message;
-      const answer = messages?.content;
-      const content = answer?.content;
+      const payload = resParsed?.data?.[0];
+      const message = payload?.message;
 
-      setResult(`Extracted from ${websiteUrl}\n\n${content}`);
+      // Contenido principal (string/objeto/array) ya normalizado
+      const answer = getMessageContent(message);
+
+      // Si hay query, mostrás solo la parte "content" si existe; si no, mostrás todo el "answer"
+      // OJO: answer puede ser string u objeto. Si es objeto y tiene .content, usarlo.
+      const contentIfAny = answer && typeof answer === 'object' ? (answer as any).content : undefined;
+
+      const display = query ? toPrettyString(contentIfAny ?? answer) : toPrettyString(answer);
+
+      setResult(`Extracted from ${websiteUrl}\n\n${display}`);
     } catch (err: any) {
       setResult(`Failed to extract: ${err?.message || 'Unknown error'}`);
     } finally {
