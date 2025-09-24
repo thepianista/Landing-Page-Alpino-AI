@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     }
 
     // URL de tu webhook en n8n para subir/insertar docs
-    const n8nWebhookUrl = 'https://ai.alpino-ai.com/webhook-test/98ae732c-d0b0-4861-80e0-d8b2b89e68af';
+    const n8nWebhookUrl = 'https://ai.alpino-ai.com/webhook/amazon-invoices';
 
     const n8nForm = new FormData();
     n8nForm.append('file', file, file.name);

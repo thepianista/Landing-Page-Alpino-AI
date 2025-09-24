@@ -22,12 +22,16 @@ function UploadPanel({
   subtitle,
   accept = '.pdf,.doc,.docx,.txt',
   apiPath,
+  sheetID,
+  gid,
   maxFileSizeMB = 10,
 }: {
   title: string;
   subtitle: string;
   accept?: string;
-  apiPath: string; // e.g. '/api/rag-agent?bucket=amazon' or '/api/rag-agent?bucket=others'
+  apiPath: string;
+  sheetID: string;
+  gid: string;
   maxFileSizeMB?: number;
 }) {
   const MAX_FILE_SIZE = maxFileSizeMB * 1024 * 1024;
@@ -194,6 +198,32 @@ function UploadPanel({
 
   const removeItem = (id: string) => setUploads((prev) => prev.filter((u) => u.id !== id));
 
+  // ===== Helpers Google Sheet (pública) =====
+
+  async function descargarXML() {
+    const url = `${apiPath}/excel-to-xml?sheetId=${sheetID}&gid=${gid}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      const { error } = await res.json().catch(() => ({ error: 'Error de conversión' }));
+      throw new Error(error);
+    }
+    const disp = res.headers.get('Content-Disposition') || '';
+    const isZip = (res.headers.get('Content-Type') || '').includes('zip');
+    const isAmazon = apiPath.includes('amazon');
+    const defaultName = isAmazon
+      ? `esterometro_amazon.${isZip ? 'zip' : 'xml'}`
+      : `esterometro_other.${isZip ? 'zip' : 'xml'}`;
+
+    const filename = /filename=\"?([^\";]+)\"?/i.exec(disp)?.[1] || defaultName;
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
   return (
     <div className="flex-1 flex flex-col gap-4">
       <Card className="shadow-md rounded-2xl">
@@ -259,7 +289,7 @@ function UploadPanel({
         </CardContent>
       </Card>
       <Card>
-        <CardContent className="p-5 overflow-x-auto min-h-72 max-h-72">
+        <CardContent className="p-5 overflow-x-auto min-h-70 max-h-70">
           <CardTitle className="text-gray-900">XML Files</CardTitle>
           <p className="text-gray-700 text-sm">download the xml files conversion</p>
           {/* List */}
@@ -299,19 +329,19 @@ function UploadPanel({
                       >
                         <X className="w-4 h-4" />
                       </button>
-                      <button
+                      {/* <button
                         type="button"
                         // onClick={() => downloadFile(u.id)}
                         className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition"
                       >
                         <Download className="w-4 h-4" />
-                      </button>
+                      </button> */}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="flex items-center justify-center h-48 text-gray-500">
+              <div className="flex items-center justify-center h-44 text-gray-500">
                 <div className="text-center">
                   <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
                   <p>No files yet. Add your documents to upload.</p>
@@ -321,6 +351,13 @@ function UploadPanel({
           </div>
         </CardContent>
       </Card>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-600">Download the XML files conversion from Google Sheets</p>
+        <Button type="button" variant="outline" className="bg-white" onClick={descargarXML}>
+          <Download className="w-4 h-4 mr-2" />
+          Descargar Excel
+        </Button>
+      </div>
     </div>
   );
 }
@@ -346,6 +383,8 @@ export default function EsterometroPage() {
             subtitle="These go to the Amazon bucket"
             accept=".pdf,.doc,.docx,.txt"
             apiPath="/api/esterometro-amazon"
+            sheetID="1NvPDtzcwFs94YuzT1PUoaKluEdSMsa6eO7jV7WslhYg"
+            gid="1291285570"
           />
 
           {/* Panel 2: Other invoices */}
@@ -354,6 +393,8 @@ export default function EsterometroPage() {
             subtitle="These go to the Other Invoices bucket"
             accept=".pdf,.doc,.docx,.txt"
             apiPath="/api/esterometro-others"
+            sheetID="1NvPDtzcwFs94YuzT1PUoaKluEdSMsa6eO7jV7WslhYg"
+            gid="1291285570"
           />
         </div>
       </main>

@@ -1,6 +1,7 @@
 // lib/excelToXml.ts
 import ExcelJS from 'exceljs';
 import { create } from 'xmlbuilder';
+import { Buffer as NodeBuffer } from "node:buffer";
 
 // -------------------- RegEx --------------------
 const ID_TAG_RE = /\s*(\d+(?:\.\d+)*)\s*<([^>]+)>/;
@@ -57,10 +58,21 @@ function endswithNoNs(tag: string, name: string) {
   return tag === name || tag.endsWith(name);
 }
 
+/** Normaliza cualquier binario a Buffer para exceljs (entorno Node) */
+function toNodeBuffer(src: ArrayBuffer | Uint8Array | NodeBuffer): NodeBuffer {
+  if (NodeBuffer.isBuffer(src)) return src;
+  if (src instanceof Uint8Array) {
+    return NodeBuffer.from(src.buffer, src.byteOffset, src.byteLength);
+  }
+  return NodeBuffer.from(src as ArrayBuffer);
+}
+
 // -------------------- Mappers --------------------
-async function buildIdToTagMap(representationBuf: ArrayBuffer | Uint8Array): Promise<Map<string, string>> {
+async function buildIdToTagMap(
+  representationBuf: ArrayBuffer | Uint8Array | Buffer
+): Promise<Map<string, string>> {
   const wb = new ExcelJS.Workbook();
-  await wb.xlsx.load(representationBuf instanceof Uint8Array ? representationBuf : new Uint8Array(representationBuf));
+  await wb.xlsx.load(toNodeBuffer(representationBuf) as any);
   const ws = wb.worksheets[0];
 
   let headerRowIdx = -1;
@@ -102,9 +114,11 @@ function buildIdToPath(idToTag: Map<string, string>): Map<string, string[]> {
   return map;
 }
 
-async function extractLeafIds(mappingBuf: ArrayBuffer | Uint8Array): Promise<Map<number, string>> {
+async function extractLeafIds(
+  mappingBuf: ArrayBuffer | Uint8Array | Buffer
+): Promise<Map<number, string>> {
   const wb = new ExcelJS.Workbook();
-  await wb.xlsx.load(mappingBuf instanceof Uint8Array ? mappingBuf : new Uint8Array(mappingBuf));
+  await wb.xlsx.load(toNodeBuffer(mappingBuf) as any);
   const ws = wb.worksheets[0];
 
   const colToId = new Map<number, string>();
@@ -295,16 +309,16 @@ function processRow(values: any[], leafIds: Map<number, string>, idToPath: Map<s
 
 // -------------------- API pública --------------------
 export async function excelToXmlFromBuffers(
-  populatedBuf: ArrayBuffer | Uint8Array,
-  mappingBuf: ArrayBuffer | Uint8Array,
-  representationBuf: ArrayBuffer | Uint8Array
+  populatedBuf: ArrayBuffer | Uint8Array | Buffer,
+  mappingBuf: ArrayBuffer | Uint8Array | Buffer,
+  representationBuf: ArrayBuffer | Uint8Array | Buffer
 ): Promise<{ filename: string; xml: string }[]> {
   const leafIds = await extractLeafIds(mappingBuf);
   const idToTag = await buildIdToTagMap(representationBuf);
   const idToPath = buildIdToPath(idToTag);
 
   const wbData = new ExcelJS.Workbook();
-  await wbData.xlsx.load(populatedBuf instanceof Uint8Array ? populatedBuf : new Uint8Array(populatedBuf));
+  await wbData.xlsx.load(toNodeBuffer(populatedBuf) as any);
   const ws = wbData.worksheets[0];
 
   const outputs: { filename: string; xml: string }[] = [];
