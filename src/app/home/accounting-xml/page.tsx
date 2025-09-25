@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Download, FileText, Upload, X } from 'lucide-react';
 import { Button } from '@/components/sellemond-bakery/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/sellemond-bakery/ui/card';
+import ExcelPreviewSheet from '@/components/ExcelPreviewSheet';
 
 // ==== Shared types ====
 type UploadStatus = 'queued' | 'uploading' | 'done' | 'error' | 'canceled';
@@ -262,7 +263,9 @@ function UploadPanel({
   );
 }
 
-export default function EsterometroPage() {
+export default function AccountingPage() {
+  const SHEET_ID = '1f26QX1dXyGpF_HDqafesLUZ2BYtPGvxk7PV8Yy50MmE';
+  const GID = '388910260';
   return (
     <>
       {/* HEADER */}
@@ -297,8 +300,9 @@ export default function EsterometroPage() {
           <CardContent className="p-5 overflow-x-auto min-h-72 max-h-72">
             <CardTitle className="text-gray-900">Excel Preview</CardTitle>
             <p className="text-gray-700 text-sm">Preview in Excel all the files</p>
-            <div className="mt-3 h-fit">
-              {/* Aqui tendria que ir el excel preview asi se puede visualizar de acuerdo a los archivos subidos */}
+
+            <div className="max-w-[1600px] mt-3 h-fit">
+              <ExcelPreviewSheet sheetId={SHEET_ID} gid={GID} />
             </div>
           </CardContent>
         </Card>
