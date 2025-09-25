@@ -123,7 +123,7 @@ export default function ExcelPreviewSheet({ sheetId, gid }: Props) {
   const [header, ...body] = normalized;
 
   return (
-    <div className="w-full h-48 overflow-auto rounded-xl border">
+    <div className="w-full h-52 overflow-auto rounded-xl border">
       <table className="min-w-max w-full text-sm table-auto">
         <thead className="bg-gray-100 sticky top-0 z-10">
           <tr>

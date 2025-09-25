@@ -226,25 +226,76 @@ function UploadPanel({
           </div>
 
           {/* Dropzone */}
-          <div
-            className={`h-44 border-2 border-dashed rounded-xl flex items-center justify-center transition-colors bg-white ${
-              isDragging ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-green-400'
-            }`}
-            role="button"
-            tabIndex={0}
-            onClick={handleChooseFile}
-            onKeyDown={(e) => (e.key === 'Enter' ? handleChooseFile() : null)}
-            onDragEnter={onDragEnter}
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            onDrop={onDrop}
-            aria-label="Drop files here or click to upload"
-          >
-            <div className="text-center text-gray-500 px-6 pointer-events-none">
-              <Upload className="w-12 h-12 mx-auto mb-3 opacity-80" />
-              <p className="font-medium">Drop files here or click to upload</p>
-              <p className="text-xs mt-1 text-gray-400">PDF, DOCX, TXT — max. {maxFileSizeMB}MB each</p>
-            </div>
+
+          <div className="max-h-44 min-h-44 mt-3 overflow-auto">
+            {uploads.length > 0 ? (
+              <div className="space-y-3">
+                {uploads.map((u) => (
+                  <div key={u.id} className="w-full flex flex-row gap-2">
+                    <div className="w-full rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-medium text-gray-800 truncate">{u.file.name}</div>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {u.file.type || 'file'} • {(u.file.size / (1024 * 1024)).toFixed(1)} MB
+                      </div>
+                      <div className="mt-2 h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+                        <div
+                          className={`h-2 transition-all ${
+                            u.status === 'error' ? 'bg-red-500' : u.status === 'done' ? 'bg-green-600' : 'bg-blue-600'
+                          }`}
+                          style={{ width: `${u.progress}%` }}
+                        />
+                      </div>
+                      <div className="mt-1 text-xs text-gray-600">
+                        {u.status === 'queued' && 'Queued'}
+                        {u.status === 'uploading' && `Uploading… ${u.progress}%`}
+                        {u.status === 'done' && 'Completed ✅'}
+                        {u.status === 'canceled' && 'Canceled'}
+                        {u.status === 'error' && `Error: ${u.error || 'Upload failed'}`}
+                      </div>
+                    </div>
+                    <div className="flex flex-col justify-center space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => (u.status === 'uploading' ? cancelUpload(u.id) : removeItem(u.id))}
+                        className="p-1.5 rounded-lg border border-gray-200 text-red-500 hover:bg-red-50 transition"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      {/* <button
+                        type="button"
+                        // onClick={() => downloadFile(u.id)}
+                        className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button> */}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div
+                className={`h-44 border-2 border-dashed rounded-xl flex items-center justify-center transition-colors bg-white ${
+                  isDragging ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-green-400'
+                }`}
+                role="button"
+                tabIndex={0}
+                onClick={handleChooseFile}
+                onKeyDown={(e) => (e.key === 'Enter' ? handleChooseFile() : null)}
+                onDragEnter={onDragEnter}
+                onDragOver={onDragOver}
+                onDragLeave={onDragLeave}
+                onDrop={onDrop}
+                aria-label="Drop files here or click to upload"
+              >
+                <div className="text-center text-gray-500 px-6 pointer-events-none">
+                  <Upload className="w-12 h-12 mx-auto mb-3 opacity-80" />
+                  <p className="font-medium">Drop files here or click to upload</p>
+                  <p className="text-xs mt-1 text-gray-400">PDF, DOCX, TXT — max. {maxFileSizeMB}MB each</p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="text-center">
@@ -280,10 +331,10 @@ export default function AccountingPage() {
 
       <main className="flex-1 p-6 space-y-4">
         <div className="flex flex-row gap-4">
-          {/* Panel 1: Amazon PDFs */}
+          {/* Panel 1: PDFs */}
           <UploadPanel
             title="Upload PDF"
-            subtitle="These go to the Amazon bucket"
+            subtitle="These go to the PDF extractor"
             accept=".pdf,.doc,.docx,.txt"
             apiPath="/api/accounting-pdf"
           />
@@ -291,19 +342,16 @@ export default function AccountingPage() {
           {/* Panel 2: Other invoices */}
           <UploadPanel
             title="Upload XML"
-            subtitle="These go to the Other Invoices bucket"
+            subtitle="These go to the XML extractor"
             accept=".pdf,.doc,.docx,.txt,.xml"
             apiPath="/api/accounting-xml"
           />
         </div>
         <Card>
-          <CardContent className="p-5 overflow-x-auto min-h-72 max-h-72">
+          <CardContent className="p-5 overflow-x-auto min-h-80 max-h-80 max-w-[1650px]">
             <CardTitle className="text-gray-900">Excel Preview</CardTitle>
-            <p className="text-gray-700 text-sm">Preview in Excel all the files</p>
-
-            <div className="max-w-[1600px] mt-3 h-fit">
-              <ExcelPreviewSheet sheetId={SHEET_ID} gid={GID} />
-            </div>
+            <p className="text-gray-700 text-sm mb-3">Preview in Excel all the files</p>
+            <ExcelPreviewSheet sheetId={SHEET_ID} gid={GID} />
           </CardContent>
         </Card>
       </main>
