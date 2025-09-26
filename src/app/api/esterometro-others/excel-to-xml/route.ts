@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import JSZip from 'jszip';
-import { excelToXmlFromSingleXlsx } from '@/lib/excel-to-xml-single';
+import { excelToXmlFromSingleXlsx } from '@/lib/excel-to-xml-comprehensive';
 
 export const runtime = 'nodejs';
 
@@ -21,7 +21,7 @@ export async function GET(req: Request) {
     }
 
     const populatedBuf = await downloadSheetXlsx(sheetId, gid);
-    const outputs = await excelToXmlFromSingleXlsx(populatedBuf);
+    const outputs = await excelToXmlFromSingleXlsx(populatedBuf, { mode: 'xsd', includeXmlDecl: true });
 
     if (!outputs.length) {
       return NextResponse.json({ error: 'No se generó ningún XML desde esa hoja' }, { status: 422 });

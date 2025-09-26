@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import JSZip from 'jszip';
-import { excelToXmlFromSingleXlsx } from '@/lib/excel-to-xml-single';
+import { excelToXmlFromSingleXlsx } from '@/lib/excel-to-xml-comprehensive';
 
 export const runtime = 'nodejs';
 
 async function downloadSheetXlsx(sheetId: string, gid: string): Promise<ArrayBuffer> {
   const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=xlsx&gid=${gid}`;
-  const res = await fetch(url);
+  const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error(`No se pudo descargar sheet ${sheetId} (gid ${gid}) [HTTP ${res.status}]`);
   return await res.arrayBuffer();
 }
@@ -20,8 +20,17 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Faltan parámetros: sheetId y gid' }, { status: 400 });
     }
 
-    const populatedBuf = await downloadSheetXlsx(sheetId, gid);
-    const outputs = await excelToXmlFromSingleXlsx(populatedBuf);
+    // === Nuevos switches por query ===
+    // ?mode=portal|xsd  (default xsd)
+    // ?decl=1|0         (default 1)
+    const modeParam = (searchParams.get('mode') ?? 'xsd').toLowerCase();
+    const mode = modeParam === 'portal' ? 'portal' : ('xsd' as const);
+    const includeXmlDecl = (searchParams.get('decl') ?? '1') === '1';
+
+    // Para copiar exactamente tu layout de ejemplo del Portal:
+    // usa mode=portal y decl=1 (tendrá xmlns="" en Header/Body y la declaración XML)
+    const xlsx = await downloadSheetXlsx(sheetId, gid);
+    const outputs = await excelToXmlFromSingleXlsx(xlsx, { mode, includeXmlDecl });
 
     if (!outputs.length) {
       return NextResponse.json({ error: 'No se generó ningún XML desde esa hoja' }, { status: 422 });
@@ -31,6 +40,7 @@ export async function GET(req: Request) {
       const { filename, xml } = outputs[0];
       return new NextResponse(xml, {
         headers: {
+          // algunos validadores/portales prefieren text/xml
           'Content-Type': 'application/xml; charset=utf-8',
           'Content-Disposition': `attachment; filename="${filename}"`,
           'Cache-Control': 'no-store',

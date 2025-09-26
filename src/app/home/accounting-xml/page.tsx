@@ -21,7 +21,7 @@ interface UploadItem {
 function UploadPanel({
   title,
   subtitle,
-  accept = '.pdf,.doc,.docx,.txt',
+  accept = '.pdf,.doc,.docx,.txt,.xml',
   apiPath,
   maxFileSizeMB = 10,
 }: {
@@ -335,7 +335,7 @@ export default function AccountingPage() {
           <UploadPanel
             title="Upload PDF"
             subtitle="These go to the PDF extractor"
-            accept=".pdf,.doc,.docx,.txt"
+            accept=".pdf"
             apiPath="/api/accounting-pdf"
           />
 
@@ -343,12 +343,12 @@ export default function AccountingPage() {
           <UploadPanel
             title="Upload XML"
             subtitle="These go to the XML extractor"
-            accept=".pdf,.doc,.docx,.txt,.xml"
+            accept=".xml"
             apiPath="/api/accounting-xml"
           />
         </div>
         <Card>
-          <CardContent className="p-5 overflow-x-auto min-h-80 max-h-80 max-w-[1650px]">
+          <CardContent className="p-5 overflow-x-auto min-h-80 max-h-80 max-w-[1600px]">
             <CardTitle className="text-gray-900">Excel Preview</CardTitle>
             <p className="text-gray-700 text-sm mb-3">Preview in Excel all the files</p>
             <ExcelPreviewSheet sheetId={SHEET_ID} gid={GID} />
