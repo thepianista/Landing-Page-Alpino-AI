@@ -133,6 +133,7 @@ function UploadPanel({
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', apiPath, true);
+      xhr.responseType = 'arraybuffer'; // Handle binary responses
 
       xhr.upload.onprogress = (evt) => {
         if (!evt.lengthComputable) return;
@@ -143,25 +144,58 @@ function UploadPanel({
       xhr.onreadystatechange = () => {
         if (xhr.readyState !== XMLHttpRequest.DONE) return;
         const ok = xhr.status >= 200 && xhr.status < 300;
-        let payload: any = null;
-        try {
-          payload = JSON.parse(xhr.responseText || '{}');
-        } catch {
-          payload = { text: xhr.responseText };
-        }
+        
+        if (ok && xhr.getResponseHeader('Content-Type')?.includes('spreadsheetml')) {
+          // Handle Excel file download
+          const blob = new Blob([xhr.response], { 
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+          });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = item.file.name.replace(/\.xml$/i, '_extracted_data.xlsx');
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          
+          setUploads((prev) =>
+            prev.map((u) =>
+              u.id === item.id
+                ? {
+                    ...u,
+                    status: 'done',
+                    progress: 100,
+                  }
+                : u
+            )
+          );
+        } else {
+          // Handle error case
+          let errorMessage = 'Upload failed';
+          try {
+            // Try to parse as JSON first
+            const textResponse = new TextDecoder().decode(xhr.response);
+            const payload = JSON.parse(textResponse);
+            errorMessage = payload?.error || xhr.statusText || 'Upload failed';
+          } catch {
+            // If not JSON, use status text
+            errorMessage = xhr.statusText || 'Upload failed';
+          }
 
-        setUploads((prev) =>
-          prev.map((u) =>
-            u.id === item.id
-              ? {
-                  ...u,
-                  status: ok ? 'done' : u.status === 'canceled' ? 'canceled' : 'error',
-                  error: ok ? undefined : payload?.error || xhr.statusText || 'Upload failed',
-                  progress: ok ? 100 : u.progress,
-                }
-              : u
-          )
-        );
+          setUploads((prev) =>
+            prev.map((u) =>
+              u.id === item.id
+                ? {
+                    ...u,
+                    status: u.status === 'canceled' ? 'canceled' : 'error',
+                    error: errorMessage,
+                    progress: u.progress,
+                  }
+                : u
+            )
+          );
+        }
         resolve();
       };
 
